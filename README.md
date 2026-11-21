@@ -4,3 +4,4 @@ Personal userscripts. Install with Violentmonkey, Tampermonkey or Greasemonkey b
 
 - **Seerr Button:** https://raw.githubusercontent.com/4scienceherm/userscripts/main/seerr-button.user.js
 - **Magnet to TorBox:** https://raw.githubusercontent.com/4scienceherm/userscripts/main/magnet-to-torbox.user.js
+- **Always Remember Me:** https://raw.githubusercontent.com/4scienceherm/userscripts/main/always-remember-me.user.js
