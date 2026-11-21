@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Seerr Button
 // @namespace    https://github.com/yourusername
-// @version      1.24
-// @description  Adds Seerr and High-Rated TV buttons across supported media sites
+// @version      1.25
+// @description  Adds a Seerr search button across supported media sites
 // @author       Anthony
 // @match        *://www.imdb.com/title/*
 // @match        *://imdb.com/title/*
@@ -15,7 +15,6 @@
 // @match        *://www.rottentomatoes.com/m/*
 // @match        *://www.rottentomatoes.com/tv/*
 // @match        *://seriesgraph.com/show/*
-// @match        *://request.crandall.cc/*
 // @updateURL    https://raw.githubusercontent.com/4scienceherm/userscripts/main/seerr-button.user.js
 // @downloadURL  https://raw.githubusercontent.com/4scienceherm/userscripts/main/seerr-button.user.js
 // @icon         https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/jellyseerr.png
@@ -28,12 +27,9 @@
     'use strict';
 
     const seerrURL = GM_getValue('seerrURL', 'https://request.crandall.cc');
-    const seriesURL = GM_getValue('seriesURL', 'https://series.crandall.cc');
-    const defaultThreshold = GM_getValue('seriesThreshold', '8.0');
 
     let lastPageKey = '';
     let navHooksInstalled = false;
-    let seerrWatchdogInstalled = false;
 
     function getHostname() {
         return window.location.hostname;
@@ -118,13 +114,6 @@
         return encodeURIComponent(info.title || info.seriesSource || '');
     }
 
-    function buildSeriesUrl(info) {
-        const url = new URL(seriesURL);
-        url.searchParams.set('source', info.seriesSource);
-        url.searchParams.set('threshold', defaultThreshold);
-        return url.toString();
-    }
-
     function createFloatingButtonGroup(info) {
         const existing = document.getElementById('seerr-button-container');
         if (existing) {
@@ -155,85 +144,7 @@
             background: '#1d4ed8'
         }));
 
-        if (info.seriesSource && info.isTv !== false) {
-            container.appendChild(makeActionLink({
-                href: buildSeriesUrl(info),
-                label: 'High-Rated TV',
-                title: `Open High-Rated TV helper for ${info.title || info.seriesSource}`,
-                background: '#7c3aed'
-            }));
-        }
-
         document.body.appendChild(container);
-    }
-
-    function insertSeerrInlineButton(info) {
-        const existing = document.getElementById('seerr-inline-high-rated-tv');
-        if (existing) {
-            existing.remove();
-        }
-
-        const titleEl = document.querySelector('h1') || document.querySelector('[data-testid="media-title"]');
-        if (!titleEl || !titleEl.parentElement || !info.seriesSource) {
-            return false;
-        }
-
-        const wrapper = document.createElement('div');
-        wrapper.id = 'seerr-inline-high-rated-tv';
-        wrapper.style.cssText = [
-            'display: flex',
-            'align-items: center',
-            'gap: 10px',
-            'margin: 0 0 12px 0',
-            'flex-wrap: wrap'
-        ].join(';');
-
-        wrapper.appendChild(makeActionLink({
-            href: buildSeriesUrl(info),
-            label: 'High-Rated TV',
-            title: `Open High-Rated TV helper for ${info.title || info.seriesSource}`,
-            background: '#7c3aed',
-            compact: true
-        }));
-
-        titleEl.parentElement.insertBefore(wrapper, titleEl);
-        return true;
-    }
-
-    function extractSeerrInfoFromUrl() {
-        const match = getPathname().match(/^\/tv\/(\d+)/);
-        if (!match) {
-            return null;
-        }
-        const title = document.querySelector('h1')?.innerText.trim() || document.title.replace(/\s*\|.*$/, '').trim() || 'TV Series';
-        return {
-            title,
-            imdbID: null,
-            tmdbID: match[1],
-            seriesSource: match[1],
-            isTv: true,
-        };
-    }
-
-    function ensureSeerrTvButton() {
-        if (getHostname() !== 'request.crandall.cc' || !getPathname().startsWith('/tv/')) {
-            return false;
-        }
-        const info = extractSeerrInfoFromUrl();
-        if (!info) {
-            return false;
-        }
-        return insertSeerrInlineButton(info);
-    }
-
-    function installSeerrWatchdog() {
-        if (seerrWatchdogInstalled) {
-            return;
-        }
-        seerrWatchdogInstalled = true;
-        window.setInterval(() => {
-            ensureSeerrTvButton();
-        }, 1200);
     }
 
     function parseIMDbPageType() {
@@ -305,17 +216,12 @@
 
     async function init() {
         const pageKey = currentPageKey();
-        if (pageKey === lastPageKey && (document.getElementById('seerr-button-container') || document.getElementById('seerr-inline-high-rated-tv'))) {
+        if (pageKey === lastPageKey && (document.getElementById('seerr-button-container'))) {
             return;
         }
         lastPageKey = pageKey;
 
         document.getElementById('seerr-button-container')?.remove();
-        document.getElementById('seerr-inline-high-rated-tv')?.remove();
-
-        if (ensureSeerrTvButton()) {
-            return;
-        }
 
         let info = null;
         if (getHostname().includes('imdb.com')) {
@@ -364,7 +270,6 @@
     }
 
     installNavigationHooks();
-    installSeerrWatchdog();
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
